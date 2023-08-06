@@ -1,0 +1,3 @@
+include/miner/block.h
+src/main.cpp
+src/miner.cpp
