@@ -3,7 +3,7 @@
 This project is based on the tutorial:
 <https://redpitaya-knowledge-base.readthedocs.io/en/latest/learn_fpga/4_lessons/LedBlink.html>
 
-I had a lot of trouble loading the bitstream. In turns out in the new version of REd Pitaya's OS image, the process
+I had a lot of trouble loading the bitstream. In turns out in the new version of Red Pitaya's OS image, the process
 to load a new FPGA design has changed:
 
 ```bash

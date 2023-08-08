@@ -10,6 +10,9 @@ namespace miner {
 class BlockHeader {
 public:
 
+    static constexpr int sNibblesPerWord = 8;
+    static constexpr int sBitsPerNibble = 4;
+
     /// Converts a hex string to a binary representation.
     /// For example miner::BlockHeader::hexStrToBinary("D3421A423F980") gives [2753821056, 865313]
     static std::vector<uint32_t> hexStrToBinary(const std::string &hex) {
@@ -20,15 +23,14 @@ public:
         };
 
         std::vector<uint32_t> binary;
-        for (auto elem : hex | std::views::reverse | std::views::chunk(8)) {
+        for (auto elem : hex | std::views::reverse | std::views::chunk(sNibblesPerWord)) {
             uint32_t value = 0;
             uint32_t shift = 0;
             for (auto e : elem) {
                 value += lookup.at(toupper(e)) << shift;
-                shift += 4;
+                shift += sBitsPerNibble;
             }
-            binary.push_back(value);
-            std::cout << std::endl;    
+            binary.push_back(value); 
         } 
         return binary;
     }
