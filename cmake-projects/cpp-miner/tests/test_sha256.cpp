@@ -16,7 +16,7 @@ TEST_F(TestFixture_Sha256, TestCHFunc) {
     uint32_t y = 0x3;
     uint32_t z = 0x8;
     uint32_t expected = 0xA;
-    uint32_t actual = miner::Sha256().ch(x, y, z);
+    uint32_t actual = miner::Sha256::ch(x, y, z);
     ASSERT_EQ(actual, expected);
 }
 
@@ -31,7 +31,7 @@ TEST_F(TestFixture_Sha256, TestEmptyHash) {
         0xe3b0c442, 0x98fc1c14, 0x9afbf4c8, 0x996fb924, 0x27ae41e4, 0x649b934c, 0xa495991b, 0x7852b855
     };
 
-    auto actual = miner::Sha256().hashBlock(miner::Sha256::sInitialHash, input);
+    auto actual = miner::Sha256::hashBlock(miner::Sha256::sInitialHash, input);
 
     ASSERT_EQ(actual, expected);
 }
@@ -47,7 +47,7 @@ TEST_F(TestFixture_Sha256, TestHashBlock1) {
         0xba7816bf, 0x8f01cfea, 0x414140de, 0x5dae2223, 0xb00361a3, 0x96177a9c, 0xb410ff61, 0xf20015ad
     };
 
-    auto actual = miner::Sha256().hashBlock(miner::Sha256::sInitialHash, input);
+    auto actual = miner::Sha256::hashBlock(miner::Sha256::sInitialHash, input);
 
     ASSERT_EQ(actual, expected);
 }
@@ -63,7 +63,7 @@ TEST_F(TestFixture_Sha256, TestHashBlock2) {
         0x85e655d6, 0x417a1795, 0x3363376a, 0x624cde5c, 0x76e09589, 0xcac5f811, 0xcc4b32c1, 0xf20e533a
     };
 
-    auto actual = miner::Sha256().hashBlock(miner::Sha256::sInitialHash, input);
+    auto actual = miner::Sha256::hashBlock(miner::Sha256::sInitialHash, input);
 
     ASSERT_EQ(actual, expected);
 }
@@ -83,13 +83,13 @@ TEST_F(TestFixture_Sha256, TestHashBlock3) {
         0x248d6a61, 0xd20638b8, 0xe5c02693, 0x0c3e6039, 0xa33ce459, 0x64ff2167, 0xf6ecedd4, 0x19db06c1
     };
 
-    auto actual = miner::Sha256().hashBlock(initial, input);
+    auto actual = miner::Sha256::hashBlock(initial, input);
 
     ASSERT_EQ(actual, expected);
 }
 
 TEST_F(TestFixture_Sha256, TestLength2Words) {
-    auto [w1, w2] = miner::Sha256().length2Words(448);
+    auto [w1, w2] = miner::Sha256::length2Words(448);
     ASSERT_EQ(w1, 0);
     ASSERT_EQ(w2, 0x1c0);
 }
@@ -101,7 +101,7 @@ TEST_F(TestFixture_Sha256, TestCalcT1) {
     uint32_t h = 0x443ed29e;
     uint32_t k = 0x9bdc06a7;
     uint32_t w = 0x80000000;
-    uint32_t actual = miner::Sha256().calcT1(e, f, g, h, k, w);
+    uint32_t actual = miner::Sha256::calcT1(e, f, g, h, k, w);
     ASSERT_EQ(actual, 0xd87ff922);
     ASSERT_EQ(actual + 0xb8e2b4cb, 0x9162aded);
 }
@@ -117,7 +117,7 @@ TEST_F(TestFixture_Sha256, TestVector1) {
         0x248d6a61, 0xd20638b8, 0xe5c02693, 0x0c3e6039, 0xa33ce459, 0x64ff2167, 0xf6ecedd4, 0x19db06c1
     };
 
-    auto actual = miner::Sha256().hash(input.data(), input.size());
+    auto actual = miner::Sha256::hash(std::span<const uint32_t>(input.data(), input.size()));
 
     ASSERT_EQ(actual, expected);
 }

@@ -21,12 +21,13 @@ FetchContent_MakeAvailable(googletest)
 ###############################################################################
 
 add_library(CppMiner INTERFACE)
-target_sources(CppMiner INTERFACE src/sha256.cpp)
+target_sources(CppMiner INTERFACE src/miner.cpp src/sha256.cpp)
 target_include_directories(CppMiner INTERFACE include)
 
 add_executable(UnitTests
     tests/main.cpp
     tests/test_block.cpp
+    tests/test_miner.cpp
     tests/test_sha256.cpp)
 target_link_libraries(UnitTests CppMiner)
 target_link_libraries(UnitTests gtest)

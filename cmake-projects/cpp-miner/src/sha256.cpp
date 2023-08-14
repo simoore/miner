@@ -1,4 +1,5 @@
 #include <algorithm>
+
 #include "miner/sha256.h"
 
 namespace miner {
@@ -48,24 +49,24 @@ Sha256::HashValue Sha256::hashBlock(const HashValue &lastHash, const Block &bloc
     return res;
 } 
 
-Sha256::HashValue Sha256::hash(const uint32_t *data, int nWords) {
+Sha256::HashValue Sha256::hash(std::span<const uint32_t> dataSpan) {
 
-    const uint32_t rounds = nWords / sBlockSize;
-    const uint32_t nWordsInFinalBlock = nWords % sBlockSize;
+    const uint32_t rounds = dataSpan.size() / sBlockSize;
+    const uint32_t nWordsInFinalBlock = dataSpan.size() % sBlockSize;
     
     Block block;
     HashValue hash = sInitialHash;
     
     for (uint32_t i = 0; i < rounds; i++) {
-        std::copy_n(data + i*sBlockSize, sBlockSize, block.begin());
+        std::copy_n(dataSpan.begin() + i*sBlockSize, sBlockSize, block.begin());
         hash = hashBlock(hash, block);
     }
 
     // last block(s)
     const bool extraBlock = nWordsInFinalBlock == 14 || nWordsInFinalBlock == 15 || nWordsInFinalBlock == 16;
-    const uint64_t l = 32 * nWords;
+    const uint64_t l = 32 * dataSpan.size();
 
-    std::copy_n(data + rounds*sBlockSize, nWordsInFinalBlock, block.begin());
+    std::copy_n(dataSpan.begin() + rounds*sBlockSize, nWordsInFinalBlock, block.begin());
     std::fill(block.begin() + nWordsInFinalBlock, block.end(), uint32_t(0));
     if (nWordsInFinalBlock != 16) {
         block[nWordsInFinalBlock] = sFirstPadWord;

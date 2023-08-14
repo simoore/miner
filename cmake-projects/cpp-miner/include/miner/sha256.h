@@ -1,12 +1,17 @@
 #include <array>
 #include <bit>
 #include <cstdint>
+#include <span>
 #include <tuple>
 
 namespace miner {
 
 class Sha256 {
 public:
+
+    ///////////////////////////////////////////////////////////////////////////
+    // PUBLIC CONSTANTS AND TYPES
+    ///////////////////////////////////////////////////////////////////////////
 
     static constexpr uint32_t sHashSize = 8;
     static constexpr uint32_t sBlockSize = 16;
@@ -37,41 +42,41 @@ public:
     // PUBLIC FUNCTIONS
     ///////////////////////////////////////////////////////////////////////////
 
-    std::tuple<uint32_t, uint32_t> length2Words(uint64_t l) {
+    static std::tuple<uint32_t, uint32_t> length2Words(uint64_t l) {
         return std::make_tuple(static_cast<uint32_t>(l >> 32), static_cast<uint32_t>(l & 0xFFFFFFFF));
     }
 
-    uint32_t ch(uint32_t x, uint32_t y, uint32_t z) {
+    static uint32_t ch(uint32_t x, uint32_t y, uint32_t z) {
         return (x & y) ^ (~x & z);
     }
 
-    uint32_t maj(uint32_t x, uint32_t y, uint32_t z) {
+    static uint32_t maj(uint32_t x, uint32_t y, uint32_t z) {
         return (x & y) ^ (x & z) ^ (y & z);
     }
 
-    uint32_t bigSig0(uint32_t x) {
+    static uint32_t bigSig0(uint32_t x) {
         return std::rotr(x, 2) ^ std::rotr(x, 13) ^ std::rotr(x, 22);
     }
 
-    uint32_t bigSig1(uint32_t x) {
+    static uint32_t bigSig1(uint32_t x) {
         return std::rotr(x, 6) ^ std::rotr(x, 11) ^ std::rotr(x, 25);
     }
 
-    uint32_t smallSig0(uint32_t x) {
+    static uint32_t smallSig0(uint32_t x) {
         return std::rotr(x, 7) ^ std::rotr(x, 18) ^ (x >> 3);
     }
 
-    uint32_t smallSig1(uint32_t x) {
+    static uint32_t smallSig1(uint32_t x) {
         return std::rotr(x, 17) ^ std::rotr(x, 19) ^ (x >> 10);
     }
 
-    uint32_t calcT1(uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t k, uint32_t w) {
+    static uint32_t calcT1(uint32_t e, uint32_t f, uint32_t g, uint32_t h, uint32_t k, uint32_t w) {
         return h + bigSig1(e) + ch(e, f, g) + k + w;
     }
 
-    HashValue hashBlock(const HashValue &lastHash, const Block &block);
+    static HashValue hashBlock(const HashValue &lastHash, const Block &block);
 
-    HashValue hash(const uint32_t *data, int nWords);
+    static HashValue hash(std::span<const uint32_t> dataSpan);
 };
 
 } // namespace miner
