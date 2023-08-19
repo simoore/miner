@@ -17,11 +17,21 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 ###############################################################################
+# Miner Application
+###############################################################################
+
+add_executable(CppMinerApp)
+target_sources(CppMinerApp PRIVATE src/main.cpp)
+target_link_libraries(CppMinerApp PRIVATE CppMiner)
+target_compile_options(CppMinerApp PRIVATE -g -Og)
+target_link_options(CppMinerApp PRIVATE -static-libasan -static-libgcc -static-libstdc++)
+
+###############################################################################
 # Unit Tests
 ###############################################################################
 
 add_library(CppMiner INTERFACE)
-target_sources(CppMiner INTERFACE src/miner.cpp src/sha256.cpp)
+target_sources(CppMiner INTERFACE src/block.cpp src/miner.cpp src/sha256.cpp)
 target_include_directories(CppMiner INTERFACE include)
 
 add_executable(UnitTests

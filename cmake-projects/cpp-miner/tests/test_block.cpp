@@ -43,7 +43,7 @@ TEST_F(TestFixture_Block, TestBlockCreation) {
         0x00000001, 
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
         std::byteswap(0x3BA3EDFDU), std::byteswap(0x7A7B12B2U), std::byteswap(0x7AC72C3EU), std::byteswap(0x67768F61U),
-        std::byteswap(0x7FC81BC3U), std::byteswap(0x888A5132U), std::byteswap(0x3A9FB8AAU), std::byteswap(0x4B1E5E4A), 
+        std::byteswap(0x7FC81BC3U), std::byteswap(0x888A5132U), std::byteswap(0x3A9FB8AAU), std::byteswap(0x4B1E5E4AU), 
         std::byteswap(0x29AB5F49U), std::byteswap(0xFFFF001DU),
         0x43456534
     };
@@ -75,4 +75,24 @@ TEST_F(TestFixture_Block, TestNBitsToDifficulty) {
     auto t6 = miner::BlockHeader::nbitsToThreshold(0x181bc330);
     miner::BlockHeader::Threshold e6 = {0, 0, 0, 0, 0, 0x1bc33000, 0, 0};
     ASSERT_EQ(t6, e6);
+}
+
+TEST_F(TestFixture_Block, TestGenesisBlockContentCorrect) {
+    // https://en.bitcoin.it/wiki/Genesis_block
+    auto header = miner::BlockHeader::genesisBlock();
+
+    std::vector<uint32_t> expectedPrevHash{{0, 0, 0, 0, 0, 0, 0, 0}};
+    std::vector<uint32_t> actualPrevHash{header.prevhash().begin(), header.prevhash().end()};
+
+    std::vector<uint32_t> expectedMerkleRoot{{0xfdeda33b, 0xb2127b7a, 0x3e2cc77a, 0x618f7667, 0xc31bc87f, 
+        0x32518a88, 0xaab89f3a, 0x4a5e1e4b}};
+    std::vector<uint32_t> actualMerkleRoot{header.merkleRoot().begin(), header.merkleRoot().end()};
+
+    ASSERT_EQ(header.version(), 1);
+    ASSERT_EQ(expectedPrevHash, actualPrevHash);
+    ASSERT_EQ(expectedMerkleRoot, actualMerkleRoot);
+    ASSERT_EQ(header.time(), 0x495FAB29);
+    ASSERT_EQ(header.nbits(), 0x1d00ffff);
+    ASSERT_EQ(header.nonce(), 2083236893U);
+    ASSERT_EQ(header.nonce(), 0x7C2BAC1D);
 }

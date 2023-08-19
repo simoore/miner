@@ -1,3 +1,5 @@
+#pragma once
+
 #include <array>
 #include <bit>
 #include <cstdint>
@@ -13,11 +15,12 @@ public:
     // PUBLIC CONSTANTS AND TYPES
     ///////////////////////////////////////////////////////////////////////////
 
+    // I have only tested on a little-endian processor. This is here to remind you to test on a big endian machine.
+    static_assert(std::endian::native == std::endian::little);
+
     static constexpr uint32_t sHashSize = 8;
     static constexpr uint32_t sBlockSize = 16;
     static constexpr uint32_t sFirstPadWord = 0x80000000;
-
-    static_assert(sFirstPadWord == 1 << 31);
 
     using HashValue = std::array<uint32_t, sHashSize>;
     using Block = std::array<uint32_t, sBlockSize>;
@@ -42,8 +45,22 @@ public:
     // PUBLIC FUNCTIONS
     ///////////////////////////////////////////////////////////////////////////
 
+    template <size_t... indices>
+    static void unroll (auto f, std::index_sequence <indices...>) {
+        (f.template operator () <indices> (), ...);
+    }
+
+    /// Swaps the host computer endianess to big endian. 
+    static uint32_t tobe(uint32_t x) {
+        if constexpr (std::endian::native == std::endian::little) {
+            return std::byteswap(x);
+        } else {
+            return x;
+        }
+    }
+
     static std::tuple<uint32_t, uint32_t> length2Words(uint64_t l) {
-        return std::make_tuple(static_cast<uint32_t>(l >> 32), static_cast<uint32_t>(l & 0xFFFFFFFF));
+        return std::make_tuple(tobe(static_cast<uint32_t>(l >> 32)), tobe(static_cast<uint32_t>(l & 0xFFFFFFFF)));
     }
 
     static uint32_t ch(uint32_t x, uint32_t y, uint32_t z) {
@@ -77,6 +94,8 @@ public:
     static HashValue hashBlock(const HashValue &lastHash, const Block &block);
 
     static HashValue hash(std::span<const uint32_t> dataSpan);
+
+    static void printHash(const HashValue &hash);
 };
 
 } // namespace miner

@@ -21,12 +21,14 @@ uint32_t Miner::mine(const uint32_t startNonce, BlockHeader &header) {
     uint32_t nonce = startNonce;
     uint32_t count = 0;
 
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    auto start = std::chrono::steady_clock::now();
 
     while (true) {
         
         header.setNonce(nonce);
         auto hashValue = Sha256::hash(header.data());
+        hashValue = Sha256::hash(hashValue);
+        
         if (validHash(threshold, hashValue)) {
             return nonce;
         }
