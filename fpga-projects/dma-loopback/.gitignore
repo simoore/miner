@@ -103,3 +103,7 @@
 */*/*/bd/*/ip/*/*.tcl
 hw_handoff
 ipshared
+
+*.gen/
+*.runs/
+*.sim/

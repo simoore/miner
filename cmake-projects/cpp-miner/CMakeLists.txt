@@ -12,8 +12,7 @@ include(FetchContent)
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG release-1.12.1
-)
+    GIT_TAG release-1.12.1)
 FetchContent_MakeAvailable(googletest)
 
 ###############################################################################
@@ -42,4 +41,3 @@ add_executable(UnitTests
 target_link_libraries(UnitTests CppMiner)
 target_link_libraries(UnitTests gtest)
 target_compile_options(UnitTests PRIVATE -g -Og)
-target_link_options(UnitTests PRIVATE -static-libasan -static-libgcc -static-libstdc++)
