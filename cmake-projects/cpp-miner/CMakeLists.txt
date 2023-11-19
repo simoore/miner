@@ -23,7 +23,6 @@ add_executable(CppMinerApp)
 target_sources(CppMinerApp PRIVATE src/main.cpp)
 target_link_libraries(CppMinerApp PRIVATE CppMiner)
 target_compile_options(CppMinerApp PRIVATE -g -Og)
-target_link_options(CppMinerApp PRIVATE -static-libasan -static-libgcc -static-libstdc++)
 
 ###############################################################################
 # Unit Tests

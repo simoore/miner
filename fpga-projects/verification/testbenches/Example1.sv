@@ -1,4 +1,4 @@
-class transaction;
+class Example1Transaction;
 
 randc bit [7:0] data;
 
@@ -11,7 +11,7 @@ endclass
 
 module Example1;
   
-transaction t;
+Example1Transaction t;
 reg [7:0] data;
   
 

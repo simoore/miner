@@ -1,14 +1,16 @@
 package Sha256Types;
 
+typedef logic [31:0] uint32_t;
+
 typedef struct {
-    logic [31:0] a;
-    logic [31:0] b;
-    logic [31:0] c;
-    logic [31:0] d;
-    logic [31:0] e;
-    logic [31:0] f;
-    logic [31:0] g;
-    logic [31:0] h;
+    uint32_t a;
+    uint32_t b;
+    uint32_t c;
+    uint32_t d;
+    uint32_t e;
+    uint32_t f;
+    uint32_t g;
+    uint32_t h;
 } WorkingVars;
 
 endpackage

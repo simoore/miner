@@ -54,7 +54,7 @@ std::vector<uint32_t> BlockHeader::hexStrToBinary(const std::string &hex) {
         uint32_t shift = 0;
         bool upperNibble = true;
         for (auto e : elem) {
-            value += lookup.at(toupper(e)) << shift + (upperNibble ? 4 : 0);
+            value += lookup.at(toupper(e)) << (shift + (upperNibble ? 4 : 0));
             shift += upperNibble ? 0 : sBitsPerByte;
             upperNibble = !upperNibble;
         }
