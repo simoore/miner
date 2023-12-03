@@ -53,9 +53,3 @@ pathadd /opt/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-linux-gnueabihf/bin
 ## Clang
 
 Download a release from <https://github.com/llvm/llvm-project/releases>
-
-C:\msys64\ucrt64\bin
-C:\msys64\usr\bin
-C:\Program Files (x86)\Arm GNU Toolchain arm-none-linux-gnueabihf\12.3 rel1\bin
-C:\GNU_MCU_Eclipse\OpenOCD\xpack-openocd-0.11.0-1\bin
-C:\Program Files (x86)\Arm GNU Toolchain arm-none-eabi\12.3 rel1\bin
