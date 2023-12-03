@@ -1,6 +1,38 @@
 `timescale 1ns / 1ps
 
-import Sha256Types::*;
+typedef struct {
+    logic firstBlock;
+    logic lastBlock;
+    logic [31:0] block [0:15];
+} HasherBlock;
+
+interface HasherPort (
+    input logic clk
+);
+    logic rst;
+    
+    logic validIn;
+    logic readyOut;
+    HasherBlock dataIn;
+    
+    logic readyHashIn;
+    logic validHashOut;
+    logic [31:0] hashOut [0:7];
+    
+    modport Main (
+        input clk,
+        
+        input rst,
+        input validIn,
+        output readyOut,
+        input dataIn,
+        
+        input readyHashIn,
+        output validHashOut,
+        output hashOut
+    );
+    
+endinterface
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The hasher takes in a set of blocks and computes the hash for the data in the blocks. It will restart the process
@@ -8,15 +40,7 @@ import Sha256Types::*;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 module Hasher(
-    input logic clk,
-    input logic validIn,
-    input logic firstBlockIn,
-    input logic lastBlockIn,
-    input logic [31:0] blockIn [0:15],
-    output logic readyForBlockOut,
-    
-    output logic validOut,
-    output logic [31:0] hashOut [0:7]
+    HasherPort.Main port
 );
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,10 +48,11 @@ module Hasher(
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     typedef enum {
-        Idle = 0,
-        StartFirstBlock = 1,
-        HashingBlock = 2,
-        EndBlock = 3
+        Idle = 0,           // Can accept a new block of data on the input.
+        LastRound = 1,      // If we are exeuting the last round of the SHA256 compression.
+        HashingBlock = 2,   // While we are computing the rounds of the SHA265 compression.
+        UpdateHash = 3,     // We are adding the result of the compression to the previosu hash.
+        TransferOut = 4     // After we receive the last block to digest, this state indicates the hash should be output.
     } State;
     
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +67,8 @@ module Hasher(
         32'h27b70a85, 32'h2e1b2138, 32'h4d2c6dfc, 32'h53380d13, 32'h650a7354, 32'h766a0abb, 32'h81c2c92e, 32'h92722c85,
         32'ha2bfe8a1, 32'ha81a664b, 32'hc24b8b70, 32'hc76c51a3, 32'hd192e819, 32'hd6990624, 32'hf40e3585, 32'h106aa070,
         32'h19a4c116, 32'h1e376c08, 32'h2748774c, 32'h34b0bcb5, 32'h391c0cb3, 32'h4ed8aa4a, 32'h5b9cca4f, 32'h682e6ff3,
-        32'h748f82ee, 32'h78a5636f, 32'h84c87814, 32'h8cc70208, 32'h90befffa, 32'ha4506ceb, 32'hbef9a3f7, 32'hc67178f2};
+        32'h748f82ee, 32'h78a5636f, 32'h84c87814, 32'h8cc70208, 32'h90befffa, 32'ha4506ceb, 32'hbef9a3f7, 32'hc67178f2
+    };
         
     localparam WorkingVars INITIAL_VARS = '{
         a: 32'h6a09e667,
@@ -59,26 +85,55 @@ module Hasher(
     // LOCAL SIGNALS
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    WorkingVars varsIn;
-    WorkingVars varsOut;
-    uint32_t bufferBlock [0:15];
-    uint32_t wIn [0:15];
-    uint32_t wOut [0:15];
-    uint32_t j = 0;
-    State state;
+    logic transferIn;
+    logic startHashing;
+    logic stalled;
+    logic transferHash;
+    logic nextValidHash;
     State nextState;
+
+    logic ready = 0;
+    logic [7:0] j = 0;
+    State state = Idle;
+    WorkingVars hashLocal = '{default: 0};
+    HasherBlock data = '{default: 0};
+    logic validHash = 0;
+    logic [31:0] hash [0:7] = '{default: 0};
+    
+    Sha256Port sha256Port(port.clk);
     
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // INPUT BUFFER
+    // STREAM INPUT BUFFER
+    // -------------------
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    assign port.readyOut = ready;
+    assign transferIn = port.validIn & ready;
     
-    always_ff @(posedge clk) begin
-        if (validIn) begin
+    // Ready signal for the block input stream.
+    always_ff @(posedge port.clk) begin
+        if (port.rst) begin
+            ready <= 0;
+        end else begin
+            ready <= (state == Idle) & !transferIn;
         end
     end
     
-    always_ff @(posedge clk) begin
-        if (state == StartFirstBlock) begin
+    // Buffer the input when input transfer condition is true.
+    always_ff @(posedge port.clk) begin
+        if (transferIn) begin
+            data <= port.dataIn;
+        end
+    end
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // SHA256 ROUND COUNTER
+    // --------------------
+    // Counts out the number of rounds required to digest a block.
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    always_ff @(posedge port.clk) begin
+        if (state == Idle) begin
             j <= 0;
         end else if (state == HashingBlock) begin
             j <= j + 1;
@@ -86,26 +141,84 @@ module Hasher(
     end
     
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // SHA256 COMPRESSION
+    // hashLocal stores the result of the hash after each block has been digested.
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
-    assign wIn = (j == 0) ? blockIn : wOut;
-    assign varsIn = (j == 0) ? INITIAL_VARS : varsOut;
+    // On the first block in the message, the hash is reset to an initial value. Then it is updated after each block
+    // is digested.
+    always_ff @(posedge port.clk) begin
+        if (port.rst) begin
+            hashLocal <= '{default: 0};
+        end else if (transferIn & port.dataIn.firstBlock) begin
+            hashLocal <= INITIAL_VARS;
+        end else if (state == UpdateHash) begin
+            hashLocal.a <= hashLocal.a + sha256Port.varsOut.a;
+            hashLocal.b <= hashLocal.b + sha256Port.varsOut.b;
+            hashLocal.c <= hashLocal.c + sha256Port.varsOut.c;
+            hashLocal.d <= hashLocal.d + sha256Port.varsOut.d;
+            hashLocal.e <= hashLocal.e + sha256Port.varsOut.e;
+            hashLocal.f <= hashLocal.f + sha256Port.varsOut.f;
+            hashLocal.g <= hashLocal.g + sha256Port.varsOut.g;
+            hashLocal.h <= hashLocal.h + sha256Port.varsOut.h;
+        end
+    end
     
-    Sha256Compression compression(
-        .clk(clk),
-        .k(ROUNDING_CONSTANTS[j]),
-        .wIn(wIn),
-        .varsIn(varsIn),
-        .wOut(wOut),
-        .varsOut(varsOut)
-    );
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // VALID HASH OUT REGISTER
+    // -----------------------
+    // These are a set registers that implement an M_AXIS interface.
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    // If (validOut and !readyIn) then the stream is stalled and the registers need to hold their value.
+    assign stalled = validHash && !port.readyHashIn;
+    
+    // This indicates a transfer of data has occurred on the AXIS interface.
+    assign transferHash = validHash && port.readyHashIn;
+    
+    // The data is output for one clock cycle is we have finished hashing, its the last block and no transfer has 
+    // already occured.
+    assign nextValidHash = (state == TransferOut) && data.lastBlock && !transferHash;
+    
+    // Map the valid hash signal to the port.
+    assign port.validHashOut = validHash;
+    
+    // Map the hash to the port.
+    assign port.hashOut = hash;
+    
+    always @(posedge port.clk) begin
+        if (port.rst) begin
+            hash <= '{default: 0};
+            validHash <= 0;
+        end else if (!stalled) begin
+            if (nextValidHash) begin
+                hash[0] <= hashLocal.a;
+                hash[1] <= hashLocal.b;
+                hash[2] <= hashLocal.c;
+                hash[3] <= hashLocal.d;
+                hash[4] <= hashLocal.e;
+                hash[5] <= hashLocal.f;
+                hash[6] <= hashLocal.g;
+                hash[7] <= hashLocal.h;
+            end
+            validHash <= nextValidHash;
+        end
+    end
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // SHA256 COMPRESSION
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+    assign sha256Port.wIn = (j == 0) ? data.block : sha256Port.wOut;
+    assign sha256Port.varsIn = (j == 0) ? hashLocal : sha256Port.varsOut;
+    assign sha256Port.k = ROUNDING_CONSTANTS[j];
+    
+    Sha256Compression compression(sha256Port);
     
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // HASHER STATE MACHINE
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
-    always_ff @(posedge clk) begin
+    always_ff @(posedge port.clk) begin
         state <= nextState;
     end
     
@@ -113,14 +226,24 @@ module Hasher(
         nextState = state;
         case (state)
         Idle:
-            if (firstBlockIn) begin
-                nextState = StartFirstBlock;
+            if (transferIn) begin
+                nextState = HashingBlock;
             end
-        StartFirstBlock: 
-            nextState = HashingBlock;
         HashingBlock:
-            if (j == 63) begin
-                nextState = EndBlock; 
+            if (j == 62) begin
+                nextState = LastRound; 
+            end
+        LastRound:
+            nextState = UpdateHash;
+        UpdateHash:
+            if (data.lastBlock) begin
+                nextState = TransferOut;
+            end else begin
+                nextState = Idle;
+            end
+        TransferOut: 
+            if (transferHash) begin
+                nextState = Idle;
             end
         endcase
     end

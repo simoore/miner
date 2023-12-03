@@ -39,6 +39,7 @@ to the path.
 * [SHA256 FPGA implementation](https://github.com/secworks/sha256)
 * [Open-Source FPGA Bitcoin Miner](https://github.com/progranism/Open-Source-FPGA-Bitcoin-Miner)
 * [US Secure Hash Algorithms (SHA and HMAC-SHA)](https://www.rfc-editor.org/rfc/rfc4634)
+* [Descriptions of SHA-256, SHA-384, and SHA-512](https://eips.ethereum.org/assets/eip-2680/sha256-384-512.pdf)
 
 ### Project Setup Examples
 

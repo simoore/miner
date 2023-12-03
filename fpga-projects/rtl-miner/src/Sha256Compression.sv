@@ -1,4 +1,36 @@
-import Sha256Types::*;
+typedef logic [31:0] uint32_t;
+
+typedef struct {
+    uint32_t a;
+    uint32_t b;
+    uint32_t c;
+    uint32_t d;
+    uint32_t e;
+    uint32_t f;
+    uint32_t g;
+    uint32_t h;
+} WorkingVars;
+
+interface Sha256Port(
+    input logic clk
+);
+    uint32_t k;
+    uint32_t wIn [0:15];
+    WorkingVars varsIn;
+
+    uint32_t wOut [0:15];
+    WorkingVars varsOut;
+
+    modport Main (
+        input clk,
+        input k,
+        input wIn,
+        input varsIn,
+    
+        output wOut,
+        output varsOut
+    );
+endinterface : Sha256Port
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // This computes one iteration of the compression algorithm used in SHA256. Feed-in the message schedule array `wIn`
@@ -6,15 +38,7 @@ import Sha256Types::*;
 // `k`. After one clock cycle, the working variables and the message schedule array for this iteration are 
 // output on `workingVarsOut` and `wOut`.
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-module Sha256Compression(
-    input logic clk,
-    input uint32_t k,
-    input uint32_t wIn [0:15],
-    input WorkingVars varsIn,
-
-    output uint32_t wOut [0:15],
-    output WorkingVars varsOut
-);
+module Sha256Compression(Sha256Port.Main port);
 
     function uint32_t calcCh(input uint32_t x, input uint32_t y, input uint32_t z);
         return (x & y) ^ (~x & z);
@@ -25,7 +49,7 @@ module Sha256Compression(
     endfunction
 
     function uint32_t calcBigSigma0(input uint32_t x);
-        return {varsIn.a[1:0], varsIn.a[31:2]} ^ {varsIn.a[12:0], varsIn.a[31:13]} ^ {varsIn.a[21:0], varsIn.a[31:22]};
+        return {x[1:0], x[31:2]} ^ {x[12:0], x[31:13]} ^ {x[21:0], x[31:22]};
     endfunction
 
     function uint32_t calcBigSigma1(input uint32_t x);
@@ -48,21 +72,21 @@ module Sha256Compression(
     uint32_t t1;
     uint32_t t2;
 
-    assign t1 = calcT1(varsIn.e, varsIn.f, varsIn.g, varsIn.h, k, wIn[0]); 
-    assign t2 = calcBigSigma0(varsIn.a) + calcMaj(varsIn.a, varsIn.b, varsIn.c);
+    assign t1 = calcT1(port.varsIn.e, port.varsIn.f, port.varsIn.g, port.varsIn.h, port.k, port.wIn[0]); 
+    assign t2 = calcBigSigma0(port.varsIn.a) + calcMaj(port.varsIn.a, port.varsIn.b, port.varsIn.c);
     
-    always_ff @(posedge clk) begin
-        wOut[0:14] <= wIn[1:15];
-        wOut[15] <= wIn[0] + calcSmallSigma0(wIn[1]) + wIn[9] + calcSmallSigma1(wIn[14]);
+    always_ff @(posedge port.clk) begin
+        port.wOut[0:14] <= port.wIn[1:15];
+        port.wOut[15] <= port.wIn[0] + calcSmallSigma0(port.wIn[1]) + port.wIn[9] + calcSmallSigma1(port.wIn[14]);
     
-        varsOut.a <= t1 + t2;
-        varsOut.b <= varsIn.a;
-        varsOut.c <= varsIn.b;
-        varsOut.d <= varsIn.c;
-        varsOut.e <= varsIn.d + t1;
-        varsOut.f <= varsIn.e;
-        varsOut.g <= varsIn.f;
-        varsOut.h <= varsIn.g;
+        port.varsOut.a <= t1 + t2;
+        port.varsOut.b <= port.varsIn.a;
+        port.varsOut.c <= port.varsIn.b;
+        port.varsOut.d <= port.varsIn.c;
+        port.varsOut.e <= port.varsIn.d + t1;
+        port.varsOut.f <= port.varsIn.e;
+        port.varsOut.g <= port.varsIn.f;
+        port.varsOut.h <= port.varsIn.g;
     end
 
 endmodule
