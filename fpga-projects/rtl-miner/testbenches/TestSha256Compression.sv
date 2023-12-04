@@ -1,7 +1,5 @@
 `timescale 1ns / 1ps
 
-import Sha256Types::*;
-
 module TestSha256Compression;
 
 logic clk;
@@ -54,7 +52,6 @@ initial begin
         #2;
         wIn = wOut;
         varsIn = varsOut;
-        // TODO: Make this a more formal testbench
     end
     
     $finish;
